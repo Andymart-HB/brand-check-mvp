@@ -1,0 +1,9 @@
+{
+  "name": "brand-check-mvp",
+  "version": "1.0.0",
+  "dependencies": {
+    "pdf-parse": "latest",
+    "openai": "latest",
+    "formidable": "latest"
+  }
+}
