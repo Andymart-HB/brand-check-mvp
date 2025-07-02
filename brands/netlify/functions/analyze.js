@@ -1,49 +1,56 @@
-const { IncomingForm } = require('formidable');
+const multipart = require('parse-multipart');
 const pdfParse = require('pdf-parse');
 const fs = require('fs');
 const path = require('path');
 const { Configuration, OpenAIApi } = require('openai');
 
 exports.handler = async (event) => {
-  // 1) Parse the form-data
-  const { fields, files } = await new Promise((res, rej) => {
-    new IncomingForm().parse(event, (err, f, fi) =>
-      err ? rej(err) : res({ fields: f, files: fi })
+  try {
+    // 1) Parse the multipart body
+    const boundary = multipart.getBoundary(event.headers['content-type']);
+    const parts = multipart.Parse(
+      Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8'),
+      boundary
     );
-  });
+    const filePart = parts.find((p) => p.filename);
+    const brandPart = parts.find((p) => p.name === 'brand');
 
-  // 2) Read the PDF buffer
-  const buffer = fs.readFileSync(files.file.path);
+    if (!filePart) {
+      return { statusCode: 400, body: 'No file uploaded' };
+    }
 
-  // 3) Extract the text
+    const buffer = filePart.data;
+
+    // 2) Extract the text
   const { text } = await pdfParse(buffer);
 
-  // 4) Load the brand rules JSON
-  const brand = fields.brand || 'hb';
+    // 3) Load the brand rules JSON
+    const brand = brandPart ? brandPart.data.toString() : 'hb';
   const rulesPath = path.join(__dirname, '..', `${brand}.json`);
   const { rules } = JSON.parse(fs.readFileSync(rulesPath, 'utf8'));
 
-  // 5) Build the AI prompt
-  const prompt = `
-You are a brand compliance expert. Here are the rules:
-${rules.map(r => `${r}`).join('\n')}
+    // 4) Build the AI prompt
+    const prompt = `You are a brand compliance expert. Here are the rules:
+${rules.map((r) => `${r}`).join('\n')}
 Check this text for any breaches and return JSON:
-"""${text}"""
-`.trim();
+"""${text}"""`;
 
-  // 6) Call OpenAI API
-  const configuration = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
-  const openai = new OpenAIApi(configuration);
-  const completion = await openai.createChatCompletion({
-    model: 'gpt-3.5-turbo',
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0,
-  });
-  const result = completion.data.choices[0].message.content.trim();
+    // 5) Call OpenAI API
+    const configuration = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = new OpenAIApi(configuration);
+    const completion = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0,
+    });
+    const result = completion.data.choices[0].message.content.trim();
 
-  return {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
-    body: result,
-  };
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: result,
+    };
+  } catch (err) {
+    return { statusCode: 500, body: err.message };
+  }
 };

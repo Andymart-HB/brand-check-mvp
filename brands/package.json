@@ -4,6 +4,6 @@
   "dependencies": {
     "pdf-parse": "latest",
     "openai": "latest",
-    "formidable": "latest"
+    "parse-multipart": "latest"
   }
 }

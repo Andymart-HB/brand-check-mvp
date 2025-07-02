@@ -4,7 +4,7 @@ This demo lets you upload a PDF and checks it against brand rules using a Netlif
 
 ## Setup
 
-1. Install dependencies for the Netlify function:
+1. Install dependencies for the Netlify function (run inside `brands/`):
    ```bash
    cd brands
    npm install
