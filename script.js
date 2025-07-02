@@ -24,8 +24,8 @@ document.getElementById('runBtn').addEventListener('click', async () => {
       throw new Error('Request failed');
     }
 
-    const text = await res.text();
-    output.textContent = text;
+    const data = await res.json();
+    output.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
     output.textContent = 'Error: ' + err.message;
   }

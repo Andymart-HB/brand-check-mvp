@@ -22,12 +22,12 @@ exports.handler = async (event) => {
     const buffer = filePart.data;
 
     // 2) Extract the text
-  const { text } = await pdfParse(buffer);
+    const { text } = await pdfParse(buffer);
 
     // 3) Load the brand rules JSON
     const brand = brandPart ? brandPart.data.toString() : 'hb';
-  const rulesPath = path.join(__dirname, '..', `${brand}.json`);
-  const { rules } = JSON.parse(fs.readFileSync(rulesPath, 'utf8'));
+    const rulesPath = path.join(__dirname, '..', '..', `${brand}.json`);
+    const { rules } = JSON.parse(fs.readFileSync(rulesPath, 'utf8'));
 
     // 4) Build the AI prompt
     const prompt = `You are a brand compliance expert. Here are the rules:
@@ -43,12 +43,18 @@ Check this text for any breaches and return JSON:
       messages: [{ role: 'user', content: prompt }],
       temperature: 0,
     });
-    const result = completion.data.choices[0].message.content.trim();
+    const resultText = completion.data.choices[0].message.content.trim();
+    let json;
+    try {
+      json = JSON.parse(resultText);
+    } catch (e) {
+      json = { result: resultText };
+    }
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: result,
+      body: JSON.stringify(json),
     };
   } catch (err) {
     return { statusCode: 500, body: err.message };
