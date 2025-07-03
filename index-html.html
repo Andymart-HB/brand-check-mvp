@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Hamilton Brown Brand Compliance System - Automated document analysis for brand consistency">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'">
+    <title>Hamilton Brown Brand Compliance System</title>
+    <script type="module" src="/src/app.ts" defer></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header card">
+            <div class="logo">
+                <h1>Hamilton Brown</h1>
+                <p>Brand Compliance System - Production Edition</p>
+            </div>
+            <div class="version">v3.0.0</div>
+        </header>
+
+        <!-- Client Selection -->
+        <section class="card">
+            <div class="form-group">
+                <label for="clientSelect" class="form-label">Client Selection</label>
+                <select id="clientSelect" class="form-select" aria-label="Select client brand guidelines">
+                    <option value="">Select Client Brand Guidelines</option>
+                    <option value="cbre">CBRE - Full Brand Guidelines (250MB)</option>
+                    <option value="osborne-clarke">Osborne Clarke - Complete Templates (180MB)</option>
+                    <option value="hamilton-brown">Hamilton Brown - Internal Standards (45MB)</option>
+                </select>
+                <div id="clientInfo" class="client-info hidden" role="status" aria-live="polite">
+                    <div class="brand-assets">
+                        <span class="asset-indicator">📚 Brand Book Loaded</span>
+                        <span class="asset-size" id="brandBookSize"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- File Upload -->
+        <section class="card">
+            <h2 class="form-label">Document Upload & Analysis</h2>
+            <div id="dropZone" class="drop-zone" aria-invalid="false">
+                <div class="drop-content">
+                    <div class="upload-icon" aria-hidden="true">📁</div>
+                    <h3>Drop your document here or click to browse</h3>
+                    <p>Supports PDF, DOCX, PPTX files up to 500MB</p>
+                    <p class="file-limits">Standard Mode: ≤100MB | Large File Mode: 100-500MB</p>
+                    <input type="file" id="fileInput" accept=".pdf,.docx,.pptx" hidden aria-label="Choose file">
+                    <button class="btn btn-primary browse-btn">Browse Files</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Processing Mode Indicator -->
+        <section id="processingMode" class="card processing-mode hidden" role="status" aria-live="polite">
+            <div class="mode-indicator">
+                <h3 id="modeTitle">Processing Mode</h3>
+                <div id="modeDetails" class="mode-details"></div>
+                <div id="timeEstimate" class="time-estimate"></div>
+            </div>
+        </section>
+
+        <!-- Progress Section -->
+        <section id="progressSection" class="card progress-section hidden" aria-live="polite">
+            <h2>Analysis Progress</h2>
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span id="progressLabel">Initializing...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <div class="progress-details">
+                    <div class="detail-row">
+                        <span>Current Step:</span>
+                        <span id="currentStep">Preparing analysis...</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Processed:</span>
+                        <span id="processedSize">0 MB</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Time Remaining:</span>
+                        <span id="timeRemaining">Calculating...</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Memory Usage:</span>
+                        <span id="memoryUsage">Monitoring...</span>
+                    </div>
+                </div>
+                <button id="cancelBtn" class="btn btn-danger">Cancel Processing</button>
+            </div>
+        </section>
+
+        <!-- Error Section -->
+        <section id="errorSection" class="error-section hidden">
+            <div class="error-content">
+                <h2>⚠️ Processing Error</h2>
+                <p id="errorMessage">An error occurred during processing.</p>
+                <button id="retryBtn" class="btn btn-primary">Try Again</button>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="resultsSection" class="card results-section hidden">
+            <h2>Analysis Results</h2>
+            
+            <!-- Score Card -->
+            <div class="score-card">
+                <div class="score-display">
+                    <div class="score-number" id="overallScore">--</div>
+                    <div class="score-label">Overall Quality Score</div>
+                </div>
+                <div class="score-context">
+                    <div class="file-context">
+                        <span>File Size: <span id="resultFileSize">--</span></span>
+                        <span>Processing Mode: <span id="resultProcessingMode">--</span></span>
+                        <span>Analysis Time: <span id="resultAnalysisTime">--</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div class="category-breakdown">
+                <h3>Category Analysis</h3>
+                <div class="categories">
+                    <div class="category">
+                        <div class="category-header">
+                            <span class="category-name">Brand Compliance</span>
+                            <span class="category-score" id="brandScore">--</span>
+                        </div>
+                        <div class="category-bar">
+                            <div class="category-fill" id="brandFill"></div>
+                        </div>
+                    </div>
+                    <div class="category">
+                        <div class="category-header">
+                            <span class="category-name">Technical Quality</span>
+                            <span class="category-score" id="technicalScore">--</span>
+                        </div>
+                        <div class="category-bar">
+                            <div class="category-fill" id="technicalFill"></div>
+                        </div>
+                    </div>
+                    <div class="category">
+                        <div class="category-header">
+                            <span class="category-name">Content Structure</span>
+                            <span class="category-score" id="structureScore">--</span>
+                        </div>
+                        <div class="category-bar">
+                            <div class="category-fill" id="structureFill"></div>
+                        </div>
+                    </div>
+                    <div class="category">
+                        <div class="category-header">
+                            <span class="category-name">Accessibility</span>
+                            <span class="category-score" id="accessibilityScore">--</span>
+                        </div>
+                        <div class="category-bar">
+                            <div class="category-fill" id="accessibilityFill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="analysis-tabs">
+                <div class="tab-headers" role="tablist">
+                    <button class="tab-btn" role="tab" aria-selected="true" aria-controls="overviewTab" data-tab="overview">Overview</button>
+                    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="issuesTab" data-tab="issues">Issues</button>
+                    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="elementsTab" data-tab="elements">Elements</button>
+                    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="recommendationsTab" data-tab="recommendations">Recommendations</button>
+                </div>
+
+                <div class="tab-content">
+                    <!-- Overview Tab -->
+                    <div id="overviewTab" class="tab-panel" role="tabpanel" aria-hidden="false">
+                        <div class="overview-stats">
+                            <div class="stat-item">
+                                <div class="stat-number" id="pageCount">--</div>
+                                <div class="stat-label">Pages</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="wordCount">--</div>
+                                <div class="stat-label">Words</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="imageCount">--</div>
+                                <div class="stat-label">Images</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="colorCount">--</div>
+                                <div class="stat-label">Colors</div>
+                            </div>
+                        </div>
+                        
+                        <div class="color-palette">
+                            <h4>Detected Color Palette</h4>
+                            <div id="colorSwatches" class="color-swatches"></div>
+                        </div>
+                    </div>
+
+                    <!-- Issues Tab -->
+                    <div id="issuesTab" class="tab-panel" role="tabpanel" aria-hidden="true">
+                        <div id="issuesList" class="issues-list"></div>
+                    </div>
+
+                    <!-- Elements Tab -->
+                    <div id="elementsTab" class="tab-panel" role="tabpanel" aria-hidden="true">
+                        <div class="elements-summary">
+                            <h4>Font Analysis</h4>
+                            <div id="fontList" class="font-list"></div>
+                            
+                            <h4>Logo Detection</h4>
+                            <div id="logoDetection" class="logo-detection"></div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendations Tab -->
+                    <div id="recommendationsTab" class="tab-panel" role="tabpanel" aria-hidden="true">
+                        <div id="recommendationsList" class="recommendations-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Options -->
+            <div class="export-section">
+                <h3>Export Results</h3>
+                <div class="export-buttons">
+                    <button id="exportJsonBtn" class="btn btn-success">Download JSON Report</button>
+                    <button id="exportPdfBtn" class="btn btn-secondary">Generate PDF Summary</button>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
